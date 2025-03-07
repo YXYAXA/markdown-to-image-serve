@@ -13,7 +13,7 @@ WORKDIR /app
 # 首先复制依赖相关文件
 COPY package*.json ./
 COPY .env* ./
-
+COPY . .
 # 安装依赖并构建
 RUN npm install && npm run build
 
