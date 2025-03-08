@@ -109,8 +109,17 @@ export default async function handler(
       : `/uploads/posters/${fileName}`;
     
     res.status(200).json({ url: `${baseUrl}${imageUrl}` });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("生成海报出错:", error);
-    res.status(500).json({ error: "Failed to generate poster", details: error.message });
+    
+    // 修复类型错误：正确处理 unknown 类型的错误
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : '未知错误';
+      
+    res.status(500).json({ 
+      error: "Failed to generate poster", 
+      details: errorMessage 
+    });
   }
 }
