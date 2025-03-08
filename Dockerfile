@@ -17,7 +17,8 @@ RUN apk update && apk add --no-cache \
 
 # 安装中文字体支持（如果需要处理中文内容）
 RUN mkdir -p /usr/share/fonts/chinese
-COPY ./fonts/* /usr/share/fonts/chinese/ || true
+# 使用 shell 执行命令来处理可能不存在的文件
+RUN if [ -d "./fonts" ]; then cp -r ./fonts/* /usr/share/fonts/chinese/ || true; fi
 RUN fc-cache -fv
 
 # 设置环境变量
