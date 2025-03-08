@@ -12,11 +12,20 @@ RUN apk update && apk add --no-cache \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
-    dumb-init
+    dumb-init \
+    fontconfig
 
-# 使用系统安装的 Chromium
+# 安装中文字体支持（如果需要处理中文内容）
+RUN mkdir -p /usr/share/fonts/chinese
+COPY ./fonts/* /usr/share/fonts/chinese/ || true
+RUN fc-cache -fv
+
+# 设置环境变量
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV CHROME_PATH=/usr/bin/chromium-browser
+# 告诉应用程序我们已在系统中安装了Chromium
+ENV USE_SYSTEM_CHROMIUM=true
 
 # 首先复制 package.json 和 package-lock.json
 COPY package*.json ./
@@ -32,6 +41,9 @@ RUN npm run build
 
 # 设置为生产环境
 ENV NODE_ENV=production
+
+# 创建临时目录用于存储图片
+RUN mkdir -p /tmp/uploads/posters && chmod -R 777 /tmp
 
 # 暴露端口
 EXPOSE 3000
