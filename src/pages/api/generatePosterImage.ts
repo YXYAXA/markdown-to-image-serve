@@ -30,9 +30,8 @@ export default async function handler(
     
     if (process.env.NODE_ENV === 'production') {
       // 在 Render 平台，使用 @sparticuz/chromium-min 和特定配置
-      executablePath = await chromium.executablePath({
-        revision: process.env.CHROMIUM_VERSION || '',
-      });
+      // 不传递参数，使用默认配置
+      executablePath = await chromium.executablePath();
       args = chromium.args;
       headless = chromium.headless;
     } else {
