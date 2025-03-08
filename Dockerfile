@@ -15,19 +15,6 @@ RUN apk update && apk add --no-cache \
     dumb-init \
     fontconfig
 
-# 安装中文字体支持（如果需要处理中文内容）
-RUN mkdir -p /usr/share/fonts/chinese
-# 使用 shell 执行命令来处理可能不存在的文件
-RUN if [ -d "./fonts" ]; then cp -r ./fonts/* /usr/share/fonts/chinese/ || true; fi
-RUN fc-cache -fv
-
-# 设置环境变量
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-ENV CHROME_PATH=/usr/bin/chromium-browser
-# 告诉应用程序我们已在系统中安装了Chromium
-ENV USE_SYSTEM_CHROMIUM=true
-
 # 首先复制 package.json 和 package-lock.json
 COPY package*.json ./
 
@@ -37,8 +24,22 @@ RUN npm install
 # 复制应用程序代码
 COPY . .
 
+# 安装中文字体支持
+RUN mkdir -p /usr/share/fonts/chinese
+# 复制项目中的字体文件到系统字体目录
+COPY ./public/fonts/SimSun.ttf /usr/share/fonts/chinese/
+# 刷新字体缓存
+RUN fc-cache -fv
+
 # 构建应用
 RUN npm run build
+
+# 设置环境变量
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV CHROME_PATH=/usr/bin/chromium-browser
+# 告诉应用程序我们已在系统中安装了Chromium
+ENV USE_SYSTEM_CHROMIUM=true
 
 # 设置为生产环境
 ENV NODE_ENV=production
