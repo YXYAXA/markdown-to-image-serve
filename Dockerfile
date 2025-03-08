@@ -17,19 +17,21 @@ RUN apk update && apk add --no-cache \
 # 使用系统安装的 Chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV CHROME_PATH=/usr/bin/chromium-browser
-ENV NODE_ENV=production
-ENV NEXT_PUBLIC_BASE_URL=https://md.yuychat.cn
+
 # 首先复制 package.json 和 package-lock.json
 COPY package*.json ./
 
-# 安装依赖
-RUN npm ci --only=production
+# 安装所有依赖，包括开发依赖
+RUN npm install
 
 # 复制应用程序代码
 COPY . .
 
 # 构建应用
 RUN npm run build
+
+# 设置为生产环境
+ENV NODE_ENV=production
 
 # 暴露端口
 EXPOSE 3000
