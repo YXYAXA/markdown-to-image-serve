@@ -24,16 +24,21 @@ export default async function handler(
     const { markdown } = req.body;
     
     // 修改 Chromium 配置逻辑
-    let executablePath;
-    let args = [];
-    let headless = true;
+    let executablePath: string;
+    let args: string[] = [];
+    let headless: boolean | 'new' = true;
     
     if (process.env.NODE_ENV === 'production') {
       // 在 Render 平台，使用 @sparticuz/chromium-min 和特定配置
-      // 不传递参数，使用默认配置
       executablePath = await chromium.executablePath();
-      args = chromium.args;
-      headless = chromium.headless;
+      // 确保 chromium.args 存在
+      if (chromium.args) {
+        args = chromium.args;
+      } else {
+        args = ['--no-sandbox', '--disable-setuid-sandbox'];
+      }
+      // 使用默认值，以防 chromium.headless 不存在
+      headless = chromium.headless !== undefined ? chromium.headless : true;
     } else {
       // 本地开发环境
       executablePath = process.env.CHROME_PATH || '/usr/bin/chromium-browser';
@@ -41,6 +46,7 @@ export default async function handler(
     }
     
     console.log('Using Chrome executable path:', executablePath);
+    console.log('Using Chrome args:', args);
     
     // 启动浏览器，修改配置选项
     const browser = await puppeteer.launch({
