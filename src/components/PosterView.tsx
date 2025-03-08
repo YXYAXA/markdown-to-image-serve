@@ -25,8 +25,8 @@ export default function PosterView() {
   // 需要根据url参数，作为mdString 的默认值
   const searchParams = useSearchParams()
   const mdString = decodeURIComponent(searchParams?.get('content')|| defaultContentMd) 
-  const headerString = decodeURIComponent(searchParams?.get('header') || 'News')
-  const footerString = decodeURIComponent(searchParams?.get('footer') || 'Powered by Powered by markdown-to-image-serve.jcommon.top')
+  const headerString = decodeURIComponent(searchParams?.get('header') || '小羊饼智慧客服')
+  const footerString = decodeURIComponent(searchParams?.get('footer') || '大饼AI变声')
 
   return (
     <div className="poster-content" style={{display: "inline-block"}}>
