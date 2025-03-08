@@ -1,7 +1,7 @@
 /*
  * @Author: wxingheng
  * @Date: 2024-11-28 14:20:13
- * @LastEditTime: 2025-02-26 18:19:27
+ * @LastEditTime: 2025-03-08 10:00:00
  * @LastEditors: wxingheng
  * @Description: 生成海报; 返回海报图片 url
  * @FilePath: /markdown-to-image-serve/src/pages/api/generatePosterImage.ts
@@ -19,24 +19,38 @@ export default async function handler(
   if (req.method !== "POST") {
     return res.status(405).json({ error: "只支持 POST 请求" });
   }
-
+  
   try {
     const { markdown } = req.body;
-
-    // 确保在生产环境下正确配置Chromium
-    const executablePath = process.env.NODE_ENV === 'production'
-      ? await chromium.executablePath()  // 不指定版本，使用最新版本
-      : process.env.CHROME_PATH || '/usr/bin/chromium-browser';
-
-    // 启动浏览器
+    
+    // 修改 Chromium 配置逻辑
+    let executablePath;
+    let args = [];
+    let headless = true;
+    
+    if (process.env.NODE_ENV === 'production') {
+      // 在 Render 平台，使用 @sparticuz/chromium-min 和特定配置
+      executablePath = await chromium.executablePath({
+        revision: process.env.CHROMIUM_VERSION || '',
+      });
+      args = chromium.args;
+      headless = chromium.headless;
+    } else {
+      // 本地开发环境
+      executablePath = process.env.CHROME_PATH || '/usr/bin/chromium-browser';
+      args = ['--no-sandbox', '--disable-setuid-sandbox'];
+    }
+    
+    console.log('Using Chrome executable path:', executablePath);
+    
+    // 启动浏览器，修改配置选项
     const browser = await puppeteer.launch({
-      args: chromium.args,  // 始终使用chromium推荐的参数
-      defaultViewport: chromium.defaultViewport,
+      args: args,
       executablePath: executablePath,
-      headless: true,  // 明确设置为true而不是依赖chromium.headless
+      headless: headless,
       ignoreHTTPSErrors: true,
     });
-
+    
     const page = await browser.newPage();
     
     // 设置视口大小
@@ -46,11 +60,18 @@ export default async function handler(
     const url = `/poster?content=${encodeURIComponent(markdown)}`;
     const fullUrl = `${baseUrl}${url}`;
     
+    console.log('Navigating to:', fullUrl);
+    
     // 导航到海报页面
     await page.goto(fullUrl, { waitUntil: 'networkidle0' });
     
+    // 添加更多日志以便调试
+    console.log('Page loaded, waiting for poster-content selector');
+    
     // 等待海报元素渲染完成
-    await page.waitForSelector(".poster-content", { timeout: 10000 });
+    await page.waitForSelector(".poster-content", { timeout: 15000 });
+    
+    console.log('Poster content selector found');
     
     // 等待所有图片加载完成
     await page.evaluate(() => {
@@ -62,6 +83,8 @@ export default async function handler(
           }))
       );
     });
+    
+    console.log('All images loaded');
     
     // 获取元素
     const element = await page.$(".poster-content");
@@ -78,12 +101,14 @@ export default async function handler(
     // 生成唯一文件名
     const fileName = `poster-${Date.now()}.png`;
     
-    // 保存路径 - 在Render上使用/tmp目录
+    // 在 Render 上使用 /tmp 目录
     const saveDir = process.env.NODE_ENV === 'production' 
       ? path.join('/tmp', 'uploads', 'posters')
       : path.join(process.cwd(), "public", "uploads", "posters");
     
     const savePath = path.join(saveDir, fileName);
+    
+    console.log('Saving screenshot to:', savePath);
     
     // 确保目录存在
     if (!fs.existsSync(saveDir)) {
@@ -100,6 +125,8 @@ export default async function handler(
         height: box.height,
       },
     });
+    
+    console.log('Screenshot taken successfully');
     
     await browser.close();
     
